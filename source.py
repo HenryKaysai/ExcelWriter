@@ -1,6 +1,56 @@
 import pandas as pd
 import os
 import datetime
+import pathlib
+import json
+
+config_file = "config.json"
+
+#Initial verifications
+#If there is not a json file createad, creates it within a desired working space
+if not os.path.exists("config.json"):
+    while True:
+        print("\nIt seems that it's your first time using this program.")
+        workspace = input("Please, type the path to your desired working directory: ")
+
+        if os.path.isdir(workspace):
+            print(f"Your directory '{workspace}' was found!")
+            
+            #JSON creation
+            configuration = {
+                "working_directory": workspace
+            }
+
+            with open(config_file, 'w') as file:
+                json.dump(configuration, file, indent=4)
+
+            print("Workspace saved successfully!")
+            break
+        else:
+            print(f"Error: The directory '{workspace}' does not exist. Try again.")
+#If json exists, load
+else:
+
+    with open(config_file, 'r') as file:
+        last_save = json.load(file)
+
+        workspace = last_save["working_directory"]
+        print(f"\nWelcome back! Working on: {workspace}")
+
+def int_capture(pininho):
+    while True:
+        int_value = input(pininho).strip()
+
+        try:
+            integer = int(int_value)
+
+            if integer > 0:
+                return integer
+            else:
+                print("Error: You must have at least 1 column. Try again.")
+        except ValueError:
+            print("Error: Please type a valid whole number (e.g., 3, 5).")
+
 
 #Verify if the number is suposed to be a string or a float, if it is not it converts itself into the other
 def number_string_validation(typing, stop_typing=False):
@@ -20,7 +70,7 @@ def number_string_validation(typing, stop_typing=False):
 
 #Sets the maximum number of columns
 print("--- Initial Configuration ---")
-column_max = int(input("How many variables (columns) does your experiment have today? "))
+column_max = int_capture("How many variables (columns) does your experiment have today? ")
 column_names = []
 
 #Asks for the name of each column
@@ -121,19 +171,21 @@ while True:
 
             if save_format == "1":
                 file_name += ".csv"
-                df.to_csv(file_name, index=False)
+                path_to_file = os.path.join(workspace, file_name)
+                df.to_csv(path_to_file, index=False)
                 break
 
             elif save_format == "2":
                 file_name += ".xlsx"
-                df.to_excel(file_name, index=False)
+                path_to_file = os.path.join(workspace, file_name)
+                df.to_excel(path_to_file, index=False)
                 break
 
         #Returns to the main menu
         if file_name.lower() == 'back':
             continue
 
-        print(f"\nSucess! Archive '{file_name}' created on the same folder as your script.")
+        print(f"\nSucess! Archive '{file_name}' created on yout workspace directory.")
         break
         
     #Add a new tab to an existing archive (ONLY WORKS FOR .xlsx)
@@ -153,9 +205,10 @@ while True:
                     print("Error: .csv files do not support tabs. Please choose a .xlsx file.")
                     continue
                 else:
+                    
                     file_name += ".xlsx"
-
-            if os.path.exists(file_name):
+            path_to_file = os.path.join(workspace, file_name)
+            if os.path.exists(path_to_file):
                 print(f"File '{file_name}' found!")
                 break
             else:
@@ -164,6 +217,7 @@ while True:
         if file_name.lower() == 'back':
             continue
 
+        
         print("\nWARNING!!!!!")
         print("IF THE NAME YOU ARE CHOOSING IS EQUAL TO THE NAME OF ANOTHER TAB")
         print("THE PROGRAM WILL REPLACE IT")
@@ -171,8 +225,10 @@ while True:
 
         if tab_name == "":
             tab_name = today_date
-        
-        with pd.ExcelWriter(file_name, mode='a', engine='openpyxl', if_sheet_exists='replace') as writer:
+
+        path_to_file = os.path.join(workspace, file_name)
+
+        with pd.ExcelWriter(path_to_file, mode='a', engine='openpyxl', if_sheet_exists='replace') as writer:
             df.to_excel(writer, sheet_name=tab_name, index=False)
             
         print(f"\nSuccess! Tab '{tab_name}' added to '{file_name}'.")
